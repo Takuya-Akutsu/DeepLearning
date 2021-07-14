@@ -52,3 +52,7 @@ def cross_entropy_error(y, t):
 def softmax_loss(X, t):
     y = softmax(X)
     return cross_entropy_error(y, t)
+
+def numerical_diff(f, x):
+    h = 1e-4 #0.0001
+    return (f(x + h) - f(x - h)) / (2 * h)
