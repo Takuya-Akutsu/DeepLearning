@@ -1,12 +1,8 @@
-# coding: utf-8
-import os
-import sys
-sys.path.append(os.pardir)  # 親ディレクトリのファイルをインポートするための設定
 import numpy as np
 import matplotlib.pyplot as plt
 import mnist as m
 import util as u
-import multi_layer_net as mnl
+import multi_layer_net as mln
 import optimizer as o
 
 
@@ -19,20 +15,15 @@ max_iterations = 2000
 
 
 # 1:実験の設定==========
-optimizers = {}
-optimizers['SGD'] = o.SGD()
-optimizers['Momentum'] = o.Momentum()
-optimizers['AdaGrad'] = o.AdaGrad()
-optimizers['Adam'] = o.Adam()
-optimizers['RMSprop'] = o.RMSprop()
+weight_init_types = {'std=0.01': 0.01, 'Xavier': 'sigmoid', 'He': 'relu'}
+optimizer = o.SGD(lr=0.01)
 
 networks = {}
 train_loss = {}
-for key in optimizers.keys():
-    networks[key] = mnl.MultiLayerNet(
-        input_size=784, hidden_size_list=[100, 100, 100, 100],
-        output_size=10)
-    train_loss[key] = []    
+for key, weight_type in weight_init_types.items():
+    networks[key] = mln.MultiLayerNet(input_size=784, hidden_size_list=[100, 100, 100, 100],
+                                  output_size=10, weight_init_std=weight_type)
+    train_loss[key] = []
 
 
 # 2:訓練の開始==========
@@ -41,27 +32,27 @@ for i in range(max_iterations):
     x_batch = x_train[batch_mask]
     t_batch = t_train[batch_mask]
     
-    for key in optimizers.keys():
+    for key in weight_init_types.keys():
         grads = networks[key].gradient(x_batch, t_batch)
-        optimizers[key].update(networks[key].params, grads)
+        optimizer.update(networks[key].params, grads)
     
         loss = networks[key].loss(x_batch, t_batch)
         train_loss[key].append(loss)
     
     if i % 100 == 0:
-        print( "===========" + "iteration:" + str(i) + "===========")
-        for key in optimizers.keys():
+        print("===========" + "iteration:" + str(i) + "===========")
+        for key in weight_init_types.keys():
             loss = networks[key].loss(x_batch, t_batch)
             print(key + ":" + str(loss))
 
 
 # 3.グラフの描画==========
-markers = {"SGD": "o", "Momentum": "x", "AdaGrad": "s", "Adam": "D", 'RMSprop': "8"}
+markers = {'std=0.01': 'o', 'Xavier': 's', 'He': 'D'}
 x = np.arange(max_iterations)
-for key in optimizers.keys():
+for key in weight_init_types.keys():
     plt.plot(x, u.smooth_curve(train_loss[key]), marker=markers[key], markevery=100, label=key)
 plt.xlabel("iterations")
 plt.ylabel("loss")
-plt.ylim(0, 1)
+plt.ylim(0, 2.5)
 plt.legend()
 plt.show()
